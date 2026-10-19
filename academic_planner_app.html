@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Assignment Planner AI Agent 2.0</title>
+  <style>
+    /* Modern CSS Design System (Works 100% offline & without external CSS) */
+    :root {
+      --bg: #0b0f17;
+      --card-bg: rgba(22, 30, 46, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(30, 41, 64, 0.9);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --primary-glow: rgba(59, 130, 246, 0.25);
+      --accent: #8b5cf6;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.12);
+      --radius: 14px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    html.light {
+      --bg: #f8fafc;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --card-border: rgba(0, 0, 0, 0.08);
+      --card-hover: rgba(241, 245, 249, 1);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-glow: rgba(37, 99, 235, 0.15);
+      --success-bg: rgba(16, 185, 129, 0.15);
+      --warning-bg: rgba(245, 158, 11, 0.15);
+      --danger-bg: rgba(239, 68, 68, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+    body { background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 24px; transition: background-color 0.3s; }
+
+    /* Layout Containers */
+    .app-container { max-width: 1380px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+    
+    /* Header */
+    header {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 20px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .header-left h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
+    .header-left p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .status-badge.local {
+      background: rgba(59, 130, 246, 0.12);
+      color: var(--primary);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+    .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+
+    .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--text-main);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn:hover { background: var(--card-hover); transform: translateY(-1px); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+    .btn-primary:hover { opacity: 0.95; box-shadow: 0 6px 18px var(--primary-glow); }
+    .btn-amber { background: var(--warning-bg); color: var(--warning); border-color: rgba(245, 158, 11, 0.3); }
+    .btn-amber:hover { background: rgba(245, 158, 11, 0.25); }
+    .btn-danger { background: var(--danger-bg); color: var(--danger); border-color: rgba(239, 68, 68, 0.3); }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+
+    /* Main Grid */
+    .main-grid { display: grid; grid-template-columns: 400px 1fr; gap: 24px; }
+    @media (max-width: 1080px) { .main-grid { grid-template-columns: 1fr; } }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 12px;
+    }
+
+    /* Form Elements */
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-control {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    html.light .form-control { background: #fff; }
+    .form-control:focus { border-color: var(--primary); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Range slider */
+    .slider-wrap { display: flex; align-items: center; gap: 12px; }
+    .slider-wrap input[type=range] { flex: 1; accent-color: var(--primary); cursor: pointer; }
+    .slider-val { font-size: 13px; font-weight: 700; min-width: 45px; text-align: right; color: var(--primary); }
+
+    /* KPI Ribbon */
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; }
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+    .kpi-card:hover { transform: translateY(-2px); }
+    .kpi-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+    .kpi-value { font-size: 22px; font-weight: 800; margin-top: 4px; }
+
+    /* Validation Banner */
+    .validation-panel {
+      border-radius: 12px;
+      padding: 16px 20px;
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 13px;
+    }
+    .validation-panel.success { background: var(--success-bg); border-color: rgba(16, 185, 129, 0.3); color: var(--success); }
+    .validation-panel.error { background: var(--danger-bg); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); }
+    .val-header { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; }
+    .val-body { color: var(--text-main); font-size: 12px; line-height: 1.5; }
+
+    /* Tabs */
+    .tab-bar { display: flex; gap: 8px; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; }
+    .tab-btn {
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .tab-btn.active { color: #fff; background: var(--primary); }
+
+    /* Task Item Cards */
+    .task-list { display: flex; flex-direction: column; gap: 12px; }
+    .task-card {
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+    html.light .task-card { background: rgba(255, 255, 255, 0.9); }
+    .task-card:hover { border-color: rgba(59, 130, 246, 0.4); transform: translateX(3px); }
+    .task-card.completed { opacity: 0.6; text-decoration: line-through; }
+    
+    .task-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .task-check-wrap { display: flex; align-items: flex-start; gap: 12px; }
+    .task-check { width: 18px; height: 18px; margin-top: 3px; cursor: pointer; accent-color: var(--primary); }
+    .task-title-line { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-high { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-med { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-low { background: rgba(59, 130, 246, 0.15); color: var(--primary); border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-diff { background: rgba(139, 92, 246, 0.2); color: var(--accent); border: 1px solid rgba(139, 92, 246, 0.4); }
+
+    .task-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 16px; flex-wrap: wrap; margin-left: 30px; }
+    .task-dod {
+      margin-left: 30px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .task-dod strong { color: var(--text-main); }
+
+    /* Gantt / Timeline View */
+    .gantt-container { display: flex; flex-direction: column; gap: 10px; padding: 10px 0; }
+    .gantt-row { display: grid; grid-template-columns: 180px 1fr; align-items: center; gap: 12px; font-size: 12px; }
+    .gantt-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gantt-track {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      height: 24px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .gantt-bar {
+      height: 18px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      position: absolute;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .gantt-buffer-zone {
+      position: absolute;
+      right: 0;
+      height: 100%;
+      background: rgba(16, 185, 129, 0.15);
+      border-left: 1px dashed var(--success);
+      border-radius: 0 6px 6px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: var(--success);
+      font-weight: 700;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      background: #1e293b;
+      color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      border: 1px solid var(--card-border);
+      font-size: 13px;
+      font-weight: 600;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      z-index: 1000;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- TOP HEADER -->
+    <header>
+      <div class="header-left">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <h1><span>🤖</span> Academic Planner AI Agent 2.0</h1>
+          <span id="backendBadge" class="status-badge local">
+            <span class="pulse-dot"></span> <span id="backendStatusText">Checking Backend...</span>
+          </span>
+        </div>
+        <p>Hierarchical Cognitive Task Decomposition • Constraint-Satisfaction Scheduling • Real-time Guardrails</p>
+      </div>
+
+      <div class="header-actions">
+        <button id="btnLoadS1" class="btn">📄 Scenario 1 (Research Paper)</button>
+        <button id="btnLoadS2" class="btn">💻 Scenario 2 (Coding Project)</button>
+        <button id="btnToggleTheme" class="btn" title="Toggle Light/Dark Theme">🌓 Theme</button>
+      </div>
+    </header>
+
+    <!-- MAIN GRID -->
+    <div class="main-grid">
+
+      <!-- LEFT: INPUTS & REVISION CONTROLS -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        
+        <!-- Assignment Form -->
+        <div class="card">
+          <div class="card-title">
+            <span>⚙️ Assignment Intake & Constraints</span>
+            <span style="font-size: 12px; color: var(--text-muted);">Step 1: Perception</span>
+          </div>
+
+          <div class="form-group">
+            <label>Assignment Title</label>
+            <input id="title" class="form-control" type="text" value="Ethical Implications of Clinical LLMs">
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Course Code</label>
+              <input id="course" class="form-control" type="text" value="BIO-702 / AI Ethics">
+            </div>
+            <div class="form-group">
+              <label>Deliverable Type</label>
+              <select id="deliverableType" class="form-control">
+                <option value="RESEARCH_PAPER">Research Paper</option>
+                <option value="CODING_PROJECT">Technical / Coding Project</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Assignment Prompt & Rubric Criteria</label>
+            <textarea id="description" class="form-control" rows="3">3,500-word comprehensive literature review analyzing 12 peer-reviewed clinical AI models. Include comparative synthesis and APA 7th bibliography.</textarea>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Start Date</label>
+              <input id="startDate" class="form-control" type="date">
+            </div>
+            <div class="form-group">
+              <label>Due Date</label>
+              <input id="dueDate" class="form-control" type="date">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Daily Study Capacity</label>
+            <div class="slider-wrap">
+              <input id="dailyHours" type="range" min="1" max="6" step="0.5" value="2.5">
+              <span id="dailyHoursVal" class="slider-val">2.5h</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Difficulty Multiplier</label>
+            <select id="difficulty" class="form-control">
+              <option value="0.85">Introductory (0.85x Effort)</option>
+              <option value="1.0" selected>Standard Graduate (1.0x Effort)</option>
+              <option value="1.3">Intensive / Challenging (1.3x Effort)</option>
+            </select>
+          </div>
+
+          <button id="btnGenerate" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px;">
+            <span>✨</span> Generate Action Plan
+          </button>
+        </div>
+
+        <!-- Dynamic Requirement Change Simulation Card -->
+        <div class="card">
+          <div class="card-title">
+            <span>⚡ Dynamic Re-planning Studio</span>
+            <span style="font-size: 11px; color: var(--accent); font-weight: 700;">AGENT ADAPTATION</span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+            Simulate realistic deadline compression or study disruptions to test the agent's dynamic adaptation engine:
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button id="btnCompressDeadline" class="btn btn-amber" style="justify-content: center;">
+              ⏩ Advance Due Date (-4 Days)
+            </button>
+            <button id="btnCutCapacity" class="btn btn-danger" style="justify-content: center;">
+              📉 Reduce Daily Study Time (1.5h/day)
+            </button>
+            <button id="btnResetPlan" class="btn" style="justify-content: center;">
+              🔄 Reset to Baseline Plan
+            </button>
+          </div>
+        </div>
+
+        <!-- Academic Integrity & Safety Guarantee -->
+        <div class="card" style="border-color: rgba(16, 185, 129, 0.3); background: var(--success-bg);">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: var(--success);">
+            <span>🛡️</span> AI Safety & Honor Code Protection
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+            This agent implements <strong>procedural scaffolding only</strong>. It generates temporal milestones, checklists, and verifiable definitions of done without authoring student papers or code.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: DASHBOARD, SCHEDULE & VALIDATION -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+
+        <!-- Top KPI Row -->
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-label">Runway Days</div>
+            <div id="kpiRunway" class="kpi-value">14</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Required Effort</div>
+            <div id="kpiEffort" class="kpi-value" style="color: var(--primary);">22.5h</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total Capacity</div>
+            <div id="kpiCapacity" class="kpi-value" style="color: var(--success);">35.0h</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Safety Buffer</div>
+            <div id="kpiBuffer" class="kpi-value" style="color: var(--accent);">2 Days</div>
+          </div>
+        </div>
+
+        <!-- Validation & Guardrail Status -->
+        <div id="valPanel" class="validation-panel success">
+          <div class="val-header">
+            <span id="valTitle">✅ Multi-Rule Plan Verification: PASSED</span>
+            <span id="valBadge" style="font-size: 11px; background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 6px;">0 Errors</span>
+          </div>
+          <div id="valBody" class="val-body">
+            All mandatory academic phases present. Zero dependency inversions detected. Workload within daily capacity limits.
+          </div>
+        </div>
+
+        <!-- Progress Tracking Bar -->
+        <div class="card" style="padding: 16px 20px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 8px;">
+            <span>Milestone Completion Progress</span>
+            <span id="progressText" style="color: var(--primary);">0% (0 / 6 Tasks)</span>
+          </div>
+          <div style="height: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; overflow: hidden; border: 1px solid var(--card-border);">
+            <div id="progressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.3s ease;"></div>
+          </div>
+        </div>
+
+        <!-- Dashboard View Tabs -->
+        <div class="card">
+          <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab('tasks')">📋 Actionable Task List</button>
+            <button class="tab-btn" onclick="switchTab('gantt')">📊 Timeline & Gantt View</button>
+            <button class="tab-btn" onclick="switchTab('export')">📝 Markdown / JSON Export</button>
+          </div>
+
+          <!-- TAB 1: Task List -->
+          <div id="tabTasks" class="task-list">
+            <!-- Dynamic Task Cards -->
+          </div>
+
+          <!-- TAB 2: Gantt Chart View -->
+          <div id="tabGantt" style="display: none;">
+            <div style="margin-bottom: 12px; font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <span>Horizontal Timeline across Runway Days</span>
+              <span style="color: var(--success); font-weight: 700;">🟩 Protected Safety Buffer at Deadline</span>
+            </div>
+            <div id="ganttView" class="gantt-container">
+              <!-- Dynamic Gantt bars -->
+            </div>
+          </div>
+
+          <!-- TAB 3: Export View -->
+          <div id="tabExport" style="display: none; flex-direction: column; gap: 12px;">
+            <div style="display: flex; gap: 10px;">
+              <button id="btnCopyMd" class="btn btn-primary">📋 Copy Plan as Markdown</button>
+              <button id="btnDownloadJson" class="btn">💾 Download Plan JSON</button>
+            </div>
+            <textarea id="exportText" class="form-control" rows="12" style="font-family: monospace; font-size: 12px;" readonly></textarea>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div id="toast">Notification</div>
+
+  <!-- APPLICATION ENGINE JAVASCRIPT -->
+  <script>
+    // State
+    let currentTasks = [];
+    let isBackendConnected = false;
+    const BACKEND_URL = "http://localhost:8000";
+
+    // Setup Dates
+    function initDates() {
+      const today = new Date();
+      const due = new Date();
+      due.setDate(today.getDate() + 14);
+
+      document.getElementById('startDate').value = today.toISOString().split('T')[0];
+      document.getElementById('dueDate').value = due.toISOString().split('T')[0];
+    }
+
+    // Toast helper
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // Backend Healthcheck
+    async function checkBackend() {
+      const badge = document.getElementById('backendBadge');
+      const text = document.getElementById('backendStatusText');
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/health`, { method: 'GET', signal: AbortSignal.timeout(1200) });
+        if (res.ok) {
+          isBackendConnected = true;
+          badge.className = "status-badge";
+          text.textContent = "🟢 Connected to Python Backend";
+          return;
+        }
+      } catch (e) {
+        // Fallback to local engine
+      }
+      isBackendConnected = false;
+      badge.className = "status-badge local";
+      text.textContent = "⚡ Local Browser Engine Active";
+    }
+
+    // Theme Toggle
+    document.getElementById('btnToggleTheme').addEventListener('click', () => {
+      document.documentElement.classList.toggle('light');
+      document.documentElement.classList.toggle('dark');
+    });
+
+    // Slider listener
+    document.getElementById('dailyHours').addEventListener('input', (e) => {
+      document.getElementById('dailyHoursVal').textContent = `${e.target.value}h`;
+    });
+
+    // Tab Switcher
+    window.switchTab = function(tabName) {
+      document.querySelectorAll('.tab-btn').forEach((b, idx) => {
+        b.classList.remove('active');
+        if ((tabName === 'tasks' && idx === 0) || (tabName === 'gantt' && idx === 1) || (tabName === 'export' && idx === 2)) {
+          b.classList.add('active');
+        }
+      });
+      document.getElementById('tabTasks').style.display = tabName === 'tasks' ? 'flex' : 'none';
+      document.getElementById('tabGantt').style.display = tabName === 'gantt' ? 'block' : 'none';
+      document.getElementById('tabExport').style.display = tabName === 'export' ? 'flex' : 'none';
+
+      if (tabName === 'gantt') renderGantt();
+      if (tabName === 'export') updateExportText();
+    };
+
+    // Client-side Academic Agent Engine (Guarantees actions always work)
+    function clientDecompose(type, diff) {
+      if (type === 'RESEARCH_PAPER') {
+        return [
+          { id: "T01", phase: "Orientation", title: "Rubric Deconstruction, Scope & Research Question", prio: "HIGH", baseHrs: 2.0, deps: [], dod: "1-page summary of rubric constraints and finalized thesis statement." },
+          { id: "T02", phase: "Research", title: "Literature Search & Annotated Matrix (12 Papers)", prio: "HIGH", baseHrs: 4.5, deps: ["T01"], dod: "Spreadsheet with methodological comparisons and BibTeX citations." },
+          { id: "T03", phase: "Outlining", title: "Detailed Section Outline & Argument Flow", prio: "MEDIUM", baseHrs: 2.5, deps: ["T02"], dod: "Structured outline covering Intro, 3 Body arguments, and Discussion." },
+          { id: "T04", phase: "Drafting", title: "Draft Introduction, Lit Review & Evidence Synthesis", prio: "HIGH", baseHrs: 6.0, deps: ["T03"], dod: "First complete draft of Intro and Body sections (~2,000 words)." },
+          { id: "T05", phase: "Drafting", title: "Draft Discussion, Conclusion & Reference Verification", prio: "MEDIUM", baseHrs: 3.5, deps: ["T04"], dod: "Complete manuscript draft with APA 7 citation cross-verification." },
+          { id: "T06", phase: "Revision", title: "Substantive Revision, Proofreading & Final Export", prio: "LOW", baseHrs: 2.5, deps: ["T05"], dod: "Zero typos, style guide compliance, final PDF export." }
+        ].map(t => ({ ...t, hours: +(t.baseHrs * diff).toFixed(1), completed: false }));
+      } else {
+        return [
+          { id: "T01", phase: "Architecture", title: "System Architecture & API Interface Specification", prio: "HIGH", baseHrs: 2.5, deps: [], dod: "System design diagram and OpenAPI function signature specs." },
+          { id: "T02", phase: "Implementation", title: "Core Worker Queue & Pipeline Implementation", prio: "HIGH", baseHrs: 6.0, deps: ["T01"], dod: "Asynchronous task queue with model worker threads running." },
+          { id: "T03", phase: "Implementation", title: "API Endpoints, Middleware & Error Handlers", prio: "MEDIUM", baseHrs: 4.0, deps: ["T02"], dod: "REST/gRPC endpoints with health checks, retries, and rate limiting." },
+          { id: "T04", phase: "Testing", title: "Unit Test Suite & Latency/Throughput Benchmarks", prio: "HIGH", baseHrs: 3.5, deps: ["T03"], dod: ">80% code coverage on pytest; benchmark report under load." },
+          { id: "T05", phase: "Documentation", title: "Technical Report, Docker Packaging & Submission Check", prio: "LOW", baseHrs: 2.5, deps: ["T04"], dod: "Verified `docker compose up` command; finalized PDF technical report." }
+        ].map(t => ({ ...t, hours: +(t.baseHrs * diff).toFixed(1), completed: false }));
+      }
+    }
+
+    function clientSchedule(rawTasks, sDate, dDate, dailyCap) {
+      const runway = Math.max(1, Math.round((dDate - sDate) / (1000 * 60 * 60 * 24)));
+      const buffer = Math.max(1, Math.floor(runway * 0.15));
+      const activeDays = Math.max(1, runway - buffer);
+
+      let dayIdx = 0;
+      let dayAllocated = 0;
+
+      return rawTasks.map(t => {
+        let taskDate = new Date(sDate);
+        taskDate.setDate(sDate.getDate() + dayIdx);
+
+        if ((dayAllocated + t.hours) > dailyCap && dayIdx < activeDays) {
+          dayIdx++;
+          dayAllocated = 0;
+          taskDate = new Date(sDate);
+          taskDate.setDate(sDate.getDate() + dayIdx);
+        }
+
+        dayAllocated += t.hours;
+        const dStr = taskDate.toISOString().split('T')[0];
+        return { ...t, scheduledDate: dStr, deadline: dStr };
+      });
+    }
+
+    function clientValidate(tasks, sDate, dDate, dailyCap, type) {
+      const errors = [];
+      const warnings = [];
+      const mandatory = type === 'RESEARCH_PAPER'
+        ? ["orientation", "research", "outline", "draft", "revision"]
+        : ["architecture", "implementation", "testing", "documentation"];
+
+      const text = tasks.map(t => `${t.phase} ${t.title}`.toLowerCase()).join(' ');
+      for (let m of mandatory) {
+        if (!text.includes(m)) errors.push(`Missing mandatory phase: ${m.toUpperCase()}`);
+      }
+
+      const map = {};
+      tasks.forEach(t => map[t.id] = t);
+      tasks.forEach(t => {
+        const dt = new Date(t.scheduledDate);
+        if (dt < sDate) errors.push(`Task ${t.id} scheduled before start date.`);
+        if (dt > dDate) errors.push(`Task ${t.id} deadline exceeds assignment due date.`);
+        t.deps.forEach(dep => {
+          if (map[dep] && new Date(map[dep].scheduledDate) > dt) {
+            errors.push(`Inversion: ${t.id} starts before prerequisite ${dep} deadline.`);
+          }
+        });
+      });
+
+      const dayLoads = {};
+      tasks.forEach(t => dayLoads[t.scheduledDate] = (dayLoads[t.scheduledDate] || 0) + t.hours);
+      for (let d in dayLoads) {
+        if (dayLoads[d] > (dailyCap + 0.1)) {
+          errors.push(`Overload on ${d}: ${dayLoads[d].toFixed(1)} hrs scheduled (Limit: ${dailyCap}h).`);
+        }
+      }
+
+      const lastTask = tasks[tasks.length - 1];
+      if (lastTask) {
+        const diff = Math.round((dDate - new Date(lastTask.deadline)) / (1000 * 60 * 60 * 24));
+        if (diff < 1) warnings.push("Zero safety buffer: Final task completes on due date.");
+      }
+
+      return { isValid: errors.length === 0, errors, warnings };
+    }
+
+    // Master Generator Function
+    async function generatePlan() {
+      const sDate = new Date(document.getElementById('startDate').value);
+      const dDate = new Date(document.getElementById('dueDate').value);
+      const dailyCap = parseFloat(document.getElementById('dailyHours').value);
+      const diff = parseFloat(document.getElementById('difficulty').value);
+      const type = document.getElementById('deliverableType').value;
+
+      if (dDate <= sDate) {
+        alert("Due date must be after the start date.");
+        return;
+      }
+
+      // Try backend if connected
+      let generated = false;
+      if (isBackendConnected) {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/plan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: document.getElementById('title').value,
+              course: document.getElementById('course').value,
+              deliverable_type: type,
+              start_date: sDate.toISOString().split('T')[0],
+              due_date: dDate.toISOString().split('T')[0],
+              daily_capacity_hours: dailyCap,
+              difficulty_multiplier: diff
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            currentTasks = data.tasks;
+            generated = true;
+            showToast("Plan generated via Python Backend!");
+          }
+        } catch (e) {
+          console.warn("Backend request failed, falling back to client engine:", e);
+        }
+      }
+
+      if (!generated) {
+        const raw = clientDecompose(type, diff);
+        currentTasks = clientSchedule(raw, sDate, dDate, dailyCap);
+        showToast("Plan generated via Local Engine!");
+      }
+
+      // KPIs
+      const runway = Math.max(1, Math.round((dDate - sDate) / (1000 * 60 * 60 * 24)));
+      const effort = currentTasks.reduce((acc, t) => acc + t.hours, 0);
+      const capacity = runway * dailyCap;
+      const lastDate = new Date(currentTasks[currentTasks.length - 1].deadline);
+      const buffer = Math.max(0, Math.round((dDate - lastDate) / (1000 * 60 * 60 * 24)));
+
+      document.getElementById('kpiRunway').textContent = runway;
+      document.getElementById('kpiEffort').textContent = `${effort.toFixed(1)}h`;
+      document.getElementById('kpiCapacity').textContent = `${capacity.toFixed(1)}h`;
+      document.getElementById('kpiBuffer').textContent = `${buffer} Days`;
+
+      // Validation
+      const report = clientValidate(currentTasks, sDate, dDate, dailyCap, type);
+      renderValidation(report);
+      renderTasks();
+      updateProgress();
+      renderGantt();
+      updateExportText();
+    }
+
+    function renderValidation(report) {
+      const panel = document.getElementById('valPanel');
+      const title = document.getElementById('valTitle');
+      const badge = document.getElementById('valBadge');
+      const body = document.getElementById('valBody');
+
+      if (report.isValid) {
+        panel.className = "validation-panel success";
+        title.innerHTML = "<span>✅</span> Multi-Rule Plan Verification: PASSED";
+        badge.textContent = `${report.warnings.length} Warnings`;
+        body.textContent = report.warnings.length > 0 
+          ? report.warnings.join(" | ")
+          : "All mandatory academic phases present. Zero dependency inversions detected. Workload within daily capacity limits.";
+      } else {
+        panel.className = "validation-panel error";
+        title.innerHTML = "<span>⚠️</span> Plan Verification: VIOLATIONS DETECTED";
+        badge.textContent = `${report.errors.length} Errors`;
+        body.innerHTML = `<strong>Errors flagged by Guardrails:</strong><br>• ${report.errors.join("<br>• ")}`;
+      }
+    }
+
+    function renderTasks() {
+      const list = document.getElementById('tabTasks');
+      list.innerHTML = "";
+
+      currentTasks.forEach((t, idx) => {
+        const card = document.createElement('div');
+        card.className = `task-card ${t.completed ? 'completed' : ''}`;
+
+        const pBadge = t.prio === 'HIGH' ? 'badge-high' : (t.prio === 'MEDIUM' ? 'badge-med' : 'badge-low');
+        const diffBadge = t.isAdapted ? '<span class="badge badge-diff">Adapted</span>' : '';
+
+        card.innerHTML = `
+          <div class="task-top">
+            <div class="task-check-wrap">
+              <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${idx})" class="task-check">
+              <div>
+                <div class="task-title-line">
+                  <span style="font-family: monospace; color: var(--text-muted); font-size: 12px;">${t.id}</span>
+                  <span>${t.title}</span>
+                  <span class="badge ${pBadge}">${t.prio}</span>
+                  ${diffBadge}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="task-meta">
+            <span>📅 Scheduled: <strong>${t.scheduledDate}</strong></span>
+            <span>⏱️ Effort: <strong>${t.hours} hrs</strong></span>
+            <span>🔄 Phase: <strong>${t.phase}</strong></span>
+            <span>🔗 Dependencies: <strong>${t.deps && t.deps.length ? t.deps.join(', ') : 'None'}</strong></span>
+          </div>
+          <div class="task-dod">
+            <strong>Definition of Done:</strong> ${t.dod}
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    window.toggleTask = function(idx) {
+      currentTasks[idx].completed = !currentTasks[idx].completed;
+      renderTasks();
+      updateProgress();
+    };
+
+    function updateProgress() {
+      const done = currentTasks.filter(t => t.completed).length;
+      const total = currentTasks.length;
+      const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+      document.getElementById('progressBar').style.width = `${pct}%`;
+      document.getElementById('progressText').textContent = `${pct}% (${done} / ${total} Tasks)`;
+    }
+
+    function renderGantt() {
+      const container = document.getElementById('ganttView');
+      container.innerHTML = "";
+      if (!currentTasks.length) return;
+
+      const sDate = new Date(document.getElementById('startDate').value);
+      const dDate = new Date(document.getElementById('dueDate').value);
+      const totalDays = Math.max(1, Math.round((dDate - sDate) / (1000 * 60 * 60 * 24)));
+
+      currentTasks.forEach((t) => {
+        const tDate = new Date(t.scheduledDate);
+        const dayOffset = Math.max(0, Math.round((tDate - sDate) / (1000 * 60 * 60 * 24)));
+        const leftPct = (dayOffset / totalDays) * 100;
+        const widthPct = Math.max(8, (1 / totalDays) * 100);
+
+        const row = document.createElement('div');
+        row.className = "gantt-row";
+        row.innerHTML = `
+          <div class="gantt-label" title="${t.title}">[${t.id}] ${t.title}</div>
+          <div class="gantt-track">
+            <div class="gantt-bar" style="left: ${leftPct}%; width: ${widthPct}%;">
+              ${t.hours}h
+            </div>
+            <div class="gantt-buffer-zone" style="width: 15%;">Buffer</div>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function updateExportText() {
+      const data = {
+        metadata: {
+          title: document.getElementById('title').value,
+          course: document.getElementById('course').value,
+          start_date: document.getElementById('startDate').value,
+          due_date: document.getElementById('dueDate').value
+        },
+        tasks: currentTasks
+      };
+      document.getElementById('exportText').value = JSON.stringify(data, null, 2);
+    }
+
+    // Dynamic Re-planning 1: Advance Due Date
+    document.getElementById('btnCompressDeadline').addEventListener('click', () => {
+      const currentDue = new Date(document.getElementById('dueDate').value);
+      currentDue.setDate(currentDue.getDate() - 4);
+      document.getElementById('dueDate').value = currentDue.toISOString().split('T')[0];
+
+      currentTasks.forEach(t => {
+        if (t.prio === 'LOW') t.hours = Math.max(1.0, +(t.hours * 0.65).toFixed(1));
+        t.isAdapted = true;
+        t.dod += " [Compressed -4d Deadline]";
+      });
+
+      generatePlan();
+      showToast("🚨 Re-planning: Due date moved 4 days forward. Non-critical tasks compressed.");
+    });
+
+    // Dynamic Re-planning 2: Cut Capacity
+    document.getElementById('btnCutCapacity').addEventListener('click', () => {
+      document.getElementById('dailyHours').value = "1.5";
+      document.getElementById('dailyHoursVal').textContent = "1.5h";
+      generatePlan();
+      showToast("📉 Capacity Re-planning: Daily limit adjusted to 1.5h/day. Schedule re-balanced.");
+    });
+
+    // Reset
+    document.getElementById('btnResetPlan').addEventListener('click', () => {
+      initDates();
+      document.getElementById('dailyHours').value = "2.5";
+      document.getElementById('dailyHoursVal').textContent = "2.5h";
+      generatePlan();
+      showToast("🔄 Reset to original baseline plan.");
+    });
+
+    // Preset 1
+    document.getElementById('btnLoadS1').addEventListener('click', () => {
+      document.getElementById('title').value = "Ethical Implications of Clinical LLMs";
+      document.getElementById('course').value = "BIO-702 / AI Ethics";
+      document.getElementById('deliverableType').value = "RESEARCH_PAPER";
+      document.getElementById('description').value = "3,500-word comprehensive literature review analyzing 12 peer-reviewed clinical AI models. Include comparative synthesis and APA 7th bibliography.";
+      document.getElementById('dailyHours').value = "2.5";
+      document.getElementById('dailyHoursVal').textContent = "2.5h";
+      document.getElementById('difficulty').value = "1.0";
+      initDates();
+      generatePlan();
+    });
+
+    // Preset 2
+    document.getElementById('btnLoadS2').addEventListener('click', () => {
+      document.getElementById('title').value = "Distributed Inference Pipeline with vLLM & Redis";
+      document.getElementById('course').value = "CS-640: Distributed Systems";
+      document.getElementById('deliverableType').value = "CODING_PROJECT";
+      document.getElementById('description').value = "Implement an asynchronous distributed worker queue with model shard workers, unit tests, and performance benchmark report.";
+      document.getElementById('dailyHours').value = "3.0";
+      document.getElementById('dailyHoursVal').textContent = "3.0h";
+      document.getElementById('difficulty').value = "1.0";
+      initDates();
+      generatePlan();
+    });
+
+    // Copy Markdown
+    document.getElementById('btnCopyMd').addEventListener('click', () => {
+      let md = `# Academic Plan: ${document.getElementById('title').value}\n\n`;
+      md += `**Course**: ${document.getElementById('course').value}\n`;
+      md += `**Timeline**: ${document.getElementById('startDate').value} to ${document.getElementById('dueDate').value}\n\n`;
+      md += `| ID | Task | Phase | Priority | Scheduled | Effort | Definition of Done |\n`;
+      md += `|---|---|---|---|---|---|---|\n`;
+      currentTasks.forEach(t => {
+        md += `| ${t.id} | ${t.title} | ${t.phase} | ${t.prio} | ${t.scheduledDate} | ${t.hours}h | ${t.dod} |\n`;
+      });
+      navigator.clipboard.writeText(md).then(() => showToast("Copied Markdown to clipboard!"));
+    });
+
+    // Download JSON
+    document.getElementById('btnDownloadJson').addEventListener('click', () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(document.getElementById('exportText').value);
+      const dl = document.createElement('a');
+      dl.setAttribute("href", dataStr);
+      dl.setAttribute("download", "academic_action_plan.json");
+      dl.click();
+    });
+
+    document.getElementById('btnGenerate').addEventListener('click', generatePlan);
+
+    // Initial load
+    initDates();
+    checkBackend().then(() => generatePlan());
+  </script>
+</body>
+</html>
